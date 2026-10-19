@@ -5,6 +5,29 @@ All notable changes to `marque/marque` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] — 2026-10-20
+
+> marque:install refuses to build a private tracker on a Redis that can forget its peers, and names the lines to set.
+
+### Added
+
+- **A private tracker is not installed on a Redis that can forget.** bloodhound 8.0
+  credits every announce against peer state held in Redis, so after the interview, and
+  before anything is installed, `marque:install` checks that the tracker's Redis persists
+  (`appendonly yes`) and never evicts (`maxmemory-policy noeviction`), and refuses with
+  the line to set if not. `BLOODHOUND_REDIS_DURABILITY=attested` in `.env` covers a
+  provider that makes the data durable another way; the eviction policy is checked
+  whenever Redis reports it. A public tracker is not held to it. The attestation is read through the
+  installer's own config (`marque.install.redis_durability`, from that variable), so it
+  holds with config cached; on a re-run, bloodhound's `redis.durability` wins.
+
+### Changed
+
+- **No longer requires `marque/threepio` directly.** Nothing in this package's code uses
+  it; it arrives through `marque/trove`, which does. So a threepio major no longer needs a
+  release of this package. The published versions' `threepio ^3.0` would have blocked
+  threepio 4.0, which bloodhound 8.0 requires. Nothing changes for an install.
+
 ## [1.0.0] — 2026-10-01
 
 > First release of the installer: one composer require, then `php artisan marque:install` interviews you and wires a working tracker.
