@@ -108,36 +108,32 @@ class FinishInstallCommand extends Command
             return;
         }
 
-        $seeder = new AdminSeeder;
+        $outcome = (new AdminSeeder)->seed($users, $this->adminName, $this->adminEmail);
 
-        if ($seeder->adminExists(fn (): int => $users::query()->where('role', 'admin')->count())) {
+        if ($outcome === AdminSeeder::EXISTS || $outcome === AdminSeeder::EXISTS_WITHOUT_OWNER) {
             $this->components->task('An admin already exists — leaving it alone');
+
+            if ($outcome === AdminSeeder::EXISTS_WITHOUT_OWNER) {
+                $this->components->warn('No one is the owner, and only an owner can grant Admin. Make one: php artisan usarrs:owner <email>');
+            }
 
             return;
         }
 
-        if ($users::query()->where('email', $this->adminEmail)->exists()) {
+        if ($outcome === AdminSeeder::EMAIL_TAKEN) {
             $this->components->warn("A user with {$this->adminEmail} already exists — skipping.");
 
             return;
         }
 
-        $admin = $users::query()->create($seeder->attributesFor($this->adminName, $this->adminEmail));
-
-        // Assigned rather than mass-assigned: stock Laravel's User declares
-        // #[Fillable] without `role`, so passing it to create() drops it
-        // silently and yields an "admin" that is not one.
-        $admin->role = $seeder->role();
-        $admin->save();
-
-        if (! $admin->isAdmin()) {
-            $this->components->error('The admin account was created but could not be given the admin role.');
-            $this->line('  Set it by hand: UPDATE users SET role = \'admin\' WHERE email = \''.$this->adminEmail.'\';');
+        if ($outcome === AdminSeeder::ROLE_NOT_SET) {
+            $this->components->error('The admin account was created but could not be made the owner.');
+            $this->line('  Set it by hand: php artisan usarrs:owner '.$this->adminEmail);
 
             return;
         }
 
-        $this->components->task("Admin account created for {$this->adminEmail}");
+        $this->components->task("Admin account created for {$this->adminEmail}, as the owner");
 
         $status = Password::sendResetLink(['email' => $this->adminEmail]);
 
@@ -268,7 +264,7 @@ class FinishInstallCommand extends Command
             return null;
         }
 
-        return $users::query()->where('role', 'admin')->first();
+        return (new AdminSeeder)->firstAdmin($users);
     }
 
     /**

@@ -5,6 +5,34 @@ All notable changes to `marque/marque` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] — 2026-10-28
+
+> The admin account the installer creates is the tracker's owner, so a fresh install can grant Admin, and the installer offers staff management (bosun).
+
+### Changed
+
+- **The first account is seeded as the owner** (trove 5's `Role::Owner`). Only an owner
+  grants Admin, so a first account seeded as a plain admin would leave an install where
+  nobody can make another admin.
+- An existing admin is any role at Admin or above, so a rerun that finds the owner leaves
+  it alone instead of seeding a second account. An install that has admins but no owner is
+  told to run `php artisan usarrs:owner <email>`.
+
+### Added
+
+- **`--preseed=<file>`**: a YAML file answers the installer's questions ahead of time, as
+  Debian's preseeding does, for repeatable and unattended installs. Unanswered questions are
+  asked. With `--no-interaction` the file must answer every one, or the install is refused
+  up front, naming what's missing. Unknown keys and wrong values refuse the file before
+  anything changes.
+- **Offers staff management** (`marque/bosun`): the staff action log and the owner's
+  Staff and Audit log screens. On by default for a private tracker, and asked of a public
+  one too. Not asked again once installed.
+
+### Breaking
+
+- **Requires `marque/trove` ^5.0 and `marque/usarrs` ^9.0.**
+
 ## [1.2.0] — 2026-10-22
 
 > A new private tracker starts with hit-and-run on.
